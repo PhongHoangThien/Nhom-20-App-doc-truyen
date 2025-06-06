@@ -1,0 +1,102 @@
+plugins {
+    alias(libs.plugins.android.application)
+
+    // THÊM DÒNG NÀY để áp dụng plugin Google Services cho module ứng dụng.
+    // Ta không cần chỉ định 'version' ở đây vì nó đã được định nghĩa ở cấp độ project.
+    id 'com.google.gms.google-services'
+//    id 'org.jetbrains.kotlin.android' // Đảm bảo có dòng này nếu bạn có Kotlin code
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+}
+
+android {
+    namespace 'com.example.demo'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.example.demo"
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    // **********************************************
+    // PHẦN CẦN CHỈNH SỬA ĐỂ KHẮC PHỤC LỖI JVM-TARGET
+    // **********************************************
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    kotlinOptions {
+        jvmTarget = '11' // Đặt Kotlin về 11 để khớp với Java
+    }
+    // **********************************************
+
+    buildFeatures {
+        compose true
+    }
+}
+
+dependencies {
+
+    implementation libs.appcompat
+    implementation libs.material
+    implementation libs.activity
+    implementation libs.constraintlayout
+    implementation libs.lifecycle.runtime.ktx
+    implementation libs.activity.compose
+    implementation platform(libs.compose.bom)
+    implementation libs.ui
+    implementation libs.ui.graphics
+    implementation libs.ui.tooling.preview
+    implementation libs.material3
+    testImplementation libs.junit
+    androidTestImplementation libs.ext.junit
+    androidTestImplementation libs.espresso.core
+
+    // THÊM HAI DÒNG SAU ĐÂY để tích hợp các thư viện Firebase.
+
+    // 1. Nhập Firebase BoM (Bill of Materials):
+    // BoM giúp quản lý phiên bản của tất cả các thư viện Firebase, đảm bảo chúng tương thích với nhau.
+    // LUÔN LUÔN KIỂM TRA tài liệu Firebase chính thức để có phiên bản BoM mới nhất.
+    // Ví dụ: phiên bản 33.0.0 là phổ biến tại thời điểm hiện tại (Tháng 6/2025).
+    implementation platform('com.google.firebase:firebase-bom:33.14.0')
+
+    // 2. Thêm các dependencies cho các sản phẩm Firebase bạn muốn sử dụng:
+    // 'firebase-analytics' được khuyến nghị cho hầu hết các dự án Firebase vì nó thu thập dữ liệu sử dụng cơ bản.
+    implementation 'com.google.firebase:firebase-analytics'
+
+    // Import the Firebase BoM
+    implementation (platform('com.google.firebase:firebase-bom:32.14.0')) // <-- THAY THẾ '32.x.x' BẰNG PHIÊN BẢN BOM MỚI NHẤT Ở https://firebase.google.com/docs/android/setup
+    // Khi sử dụng BOM, ta không cần chỉ định phiên bản cho từng thư viện Firebase con
+    implementation 'com.google.firebase:firebase-auth'
+
+    // Google Sign-In (THÊM DÒNG NÀY)
+    implementation 'com.google.android.gms:play-services-auth:21.3.0'
+    androidTestImplementation platform(libs.compose.bom)
+    androidTestImplementation libs.ui.test.junit4
+    debugImplementation libs.ui.tooling
+    debugImplementation libs.ui.test.manifest
+// Kiểm tra phiên bản mới nhất trên Google Developers ở https://developers.google.com/android/guides/setup
+
+    // Thêm các thư viện Firebase khác TÙY THEO NHU CẦU CỦA MÌNH.
+    // Ví dụ, nếu bạn muốn sử dụng Xác thực (Authentication) và Cơ sở dữ liệu Firestore:
+    // implementation 'com.google.firebase:firebase-auth'
+    // implementation 'com.google.firebase:firebase-firestore'
+
+    // Một số thư viện Firebase phổ biến khác:
+    // implementation 'com.google.firebase:firebase-storage'      // Lưu trữ file
+    // implementation 'com.google.firebase:firebase-database'     // Cơ sở dữ liệu thời gian thực (Realtime Database)
+    // implementation 'com.google.firebase:firebase-messaging'    // Thông báo đẩy (Cloud Messaging)
+    // implementation 'com.google.firebase:firebase-crashlytics'  // Báo cáo lỗi (Crashlytics)
+}

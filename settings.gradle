@@ -1,0 +1,23 @@
+pluginManagement {
+    repositories {
+        google {
+            content {
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+                includeGroupByRegex("androidx.*")
+            }
+        }
+        mavenCentral()// Đảm bảo có dòng này
+        gradlePluginPortal()// Đảm bảo có dòng này
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()// Đảm bảo có dòng này
+        mavenCentral()// Đảm bảo có dòng này
+    }
+}
+
+rootProject.name = "Demo"
+include ':app'

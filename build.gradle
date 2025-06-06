@@ -1,0 +1,15 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+plugins {
+    alias(libs.plugins.android.application) apply false
+
+    // Thêm plugin Google Services vào đây
+    // Luôn kiểm tra tài liệu Firebase chính thức để có phiên bản plugin mới nhất.
+    // Tại thời điểm hiện tại (Tháng 6/2025), phiên bản 4.4.2 đang được dùng phổ biến.
+    id 'com.google.gms.google-services' version '4.4.2' apply false
+    alias(libs.plugins.kotlin.android) apply false
+    alias(libs.plugins.kotlin.compose) apply false // <-- THÊM DÒNG NÀY
+}
+
+// KHÔNG cần thêm khối buildscript và allprojects/dependencyResolutionManagement nữa
+// vì các plugin và repository hiện được quản lý trong settings.gradle.
+// Tuy nhiên, để đảm bảo, ta cần kiểm tra file settings.gradle.
