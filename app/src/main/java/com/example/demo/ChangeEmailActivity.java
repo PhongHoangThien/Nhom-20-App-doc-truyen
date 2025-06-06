@@ -1,125 +1,136 @@
 package com.example.demo;
 
-import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.ProgressBar;
+import android.util.Log;
+import android.view.MenuItem;
 import android.widget.Toast;
-
-import com.example.demo.model.AuthenticationModel;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import com.example.demo.databinding.ActivityChangeEmailBinding;
+import com.example.demo.network.ApiService;
+import com.example.demo.network.ChangeEmailRequest;
+import com.example.demo.network.RetrofitClient;
+import com.example.demo.utils.SharedPreferencesManager;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import java.io.IOException;
 
 public class ChangeEmailActivity extends AppCompatActivity {
-
-    private ImageView btnBack;
-    private EditText etCurrentPassword;
-    private EditText etNewEmail;
-    private Button btnSave;
-
-    private ProgressBar progressBar; // Khai báo ProgressBar
-    private AuthenticationModel authModel; // Khai báo
+    private static final String TAG = "ChangeEmailActivity";
+    private ActivityChangeEmailBinding binding;
+    private ApiService apiService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_change_email);
+        binding = ActivityChangeEmailBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
-        authModel = new AuthenticationModel(); // Khởi tạo AuthModel
-
-        btnBack = findViewById(R.id.btnBack);
-        etCurrentPassword = findViewById(R.id.etCurrentPassword);
-        etNewEmail = findViewById(R.id.etNewEmail);
-        btnSave = findViewById(R.id.btnSave);
-        progressBar = findViewById(R.id.progressBar); // Ánh xạ ProgressBar (bạn cần thêm ProgressBar vào layout)
-
-        // Ẩn ProgressBar ban đầu
-        if (progressBar != null) {
-            progressBar.setVisibility(View.GONE);
+        // Set up toolbar
+        setSupportActionBar(binding.toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle("Change Email");
         }
 
-        btnBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish(); // Quay lại màn hình trước đó
-            }
-        });
+        // Initialize API service
+        apiService = RetrofitClient.getInstance().getClient().create(ApiService.class);
 
-        btnSave.setOnClickListener(new View.OnClickListener() {
+        // Set up click listeners
+        setupClickListeners();
+        Log.d(TAG, "Activity created and initialized");
+    }
+
+    private void setupClickListeners() {
+        binding.buttonChangeEmail.setOnClickListener(v -> {
+            Log.d(TAG, "Button clicked");
+            changeEmail();
+        });
+    }
+
+    private void changeEmail() {
+        String newEmail = binding.editTextNewEmail.getText().toString().trim();
+        String currentPassword = binding.editTextPassword.getText().toString().trim();
+
+        Log.d(TAG, "Validating input: newEmail=" + newEmail + ", currentPassword=" + currentPassword);
+
+        // Validate input
+        if (newEmail.isEmpty()) {
+            binding.editTextNewEmail.setError("Please enter new email");
+            Log.d(TAG, "New email is empty");
+            return;
+        }
+        if (currentPassword.isEmpty()) {
+            binding.editTextPassword.setError("Please enter your password");
+            Log.d(TAG, "Current password is empty");
+            return;
+        }
+
+        // Show loading
+        binding.buttonChangeEmail.setEnabled(false);
+        binding.progressBar.setVisibility(android.view.View.VISIBLE);
+
+        // Get token from SharedPreferences
+        String token = SharedPreferencesManager.getInstance(this).getToken();
+        if (token == null || token.isEmpty()) {
+            Log.e(TAG, "Token is null or empty");
+            Toast.makeText(this, "Please login again", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        // Create request
+        ChangeEmailRequest request = new ChangeEmailRequest(newEmail, currentPassword);
+        Log.d(TAG, "Request created: " + request.getNewEmail() + ", " + request.getCurrentPassword());
+        Log.d(TAG, "Token: " + token);
+
+        // Call API
+        Log.d(TAG, "Calling API...");
+        apiService.changeEmail("Bearer " + token, request).enqueue(new Callback<Void>() {
             @Override
-            public void onClick(View v) {
-                // Logic xử lý đổi email
-                attemptChangeEmail();
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                binding.buttonChangeEmail.setEnabled(true);
+                binding.progressBar.setVisibility(android.view.View.GONE);
+
+                Log.d(TAG, "Response received: code=" + response.code());
+                if (response.isSuccessful()) {
+                    Log.d(TAG, "Email changed successfully");
+                    Toast.makeText(ChangeEmailActivity.this, "Email changed successfully", Toast.LENGTH_SHORT).show();
+                    finish();
+                } else {
+                    String errorMessage = "Failed to change email";
+                    if (response.code() == 401) {
+                        errorMessage = "Invalid password";
+                    } else if (response.code() == 409) {
+                        errorMessage = "Email already exists";
+                    }
+                    try {
+                        String errorBody = response.errorBody().string();
+                        Log.e(TAG, "Error: " + errorBody);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    Toast.makeText(ChangeEmailActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                binding.buttonChangeEmail.setEnabled(true);
+                binding.progressBar.setVisibility(android.view.View.GONE);
+                Log.e(TAG, "Network error", t);
+                Toast.makeText(ChangeEmailActivity.this, "Network error", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void attemptChangeEmail() {
-        String currentPassword = etCurrentPassword.getText().toString().trim();
-        String newEmail = etNewEmail.getText().toString().trim();
-
-        if (currentPassword.isEmpty()) {
-            etCurrentPassword.setError("Mật khẩu hiện tại không được để trống.");
-            etCurrentPassword.requestFocus();
-            return;
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            onBackPressed();
+            return true;
         }
-        if (newEmail.isEmpty()) {
-            etNewEmail.setError("Email mới không được để trống.");
-            etNewEmail.requestFocus();
-            return;
-        }
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(newEmail).matches()) {
-            etNewEmail.setError("Email mới không hợp lệ.");
-            etNewEmail.requestFocus();
-            return;
-        }
-
-        // Lấy email hiện tại của người dùng đang đăng nhập từ Firebase Auth
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser == null || currentUser.getEmail() == null) {
-            Toast.makeText(this, "Không thể lấy thông tin email hiện tại. Vui lòng đăng nhập lại.", Toast.LENGTH_LONG).show();
-            return;
-        }
-        String currentEmail = currentUser.getEmail();
-
-        // Hiển thị ProgressBar (nếu có)
-        if (progressBar != null) {
-            progressBar.setVisibility(View.VISIBLE);
-        }
-        btnSave.setEnabled(false); // Vô hiệu hóa nút để tránh click nhiều lần
-
-        authModel.reauthenticateAndUpdateEmail(currentEmail, currentPassword, newEmail, new AuthenticationModel.AuthCallback() {
-            @Override
-            public void onSuccess() {
-                // Ẩn ProgressBar và bật lại nút
-                if (progressBar != null) {
-                    progressBar.setVisibility(View.GONE);
-                }
-                btnSave.setEnabled(true);
-
-                Toast.makeText(ChangeEmailActivity.this, "Email đã được đổi thành công. Vui lòng kiểm tra email mới để xác minh.", Toast.LENGTH_LONG).show();
-                finish(); // Đóng Activity sau khi đổi thành công
-            }
-
-            @Override
-            public void onFailure(String errorMessage) {
-                // Ẩn ProgressBar và bật lại nút
-                if (progressBar != null) {
-                    progressBar.setVisibility(View.GONE);
-                }
-                btnSave.setEnabled(true);
-
-                Toast.makeText(ChangeEmailActivity.this, "Lỗi đổi email: " + errorMessage, Toast.LENGTH_LONG).show();
-                // Gợi ý cho người dùng nếu lỗi là do xác thực lại
-                if (errorMessage != null && errorMessage.contains("Xác thực lại thất bại")) {
-                    Toast.makeText(ChangeEmailActivity.this, "Mật khẩu hiện tại không đúng hoặc cần đăng nhập lại.", Toast.LENGTH_LONG).show();
-                } else if (errorMessage != null && errorMessage.contains("already in use")) {
-                    Toast.makeText(ChangeEmailActivity.this, "Email này đã được sử dụng bởi tài khoản khác.", Toast.LENGTH_LONG).show();
-                }
-            }
-        });
+        return super.onOptionsItemSelected(item);
     }
 }
