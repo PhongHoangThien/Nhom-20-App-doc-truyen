@@ -1,98 +1,126 @@
 package com.example.demo;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.Toast;
-
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-
-import com.example.demo.model.AuthenticationModel;
-import com.google.firebase.auth.FirebaseUser;
+import androidx.appcompat.widget.Toolbar;
+import com.example.demo.databinding.ActivityMainBinding;
+import com.example.demo.network.User;
+import com.example.demo.network.ApiService;
+import com.example.demo.network.RetrofitClient;
+import com.example.demo.utils.SharedPreferencesManager;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
-
-    // Test Save Link và mo link truyện
-//    Button openLinkButton;
-//    EditText linkInput;
-//    Button saveButton;
-//    TextView savedLinks;
-//    SharedPreferences sharedPreferences;
-//    static final String PREF_NAME = "SavedLinks";
-//    static final String LINK_KEY = "link_list";
-
-    // Test tính năng Authentication
-//    private TextView textViewUserInfo;
-//    private Button buttonLogout;
-    private AuthenticationModel authModel; // Khai báo đối tượng Model
-
-
+    private ActivityMainBinding binding;
+    private ApiService apiService;
+    private User currentUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d("LIFECYCLE", "onCreate được gọi");
-        setContentView(R.layout.activity_main); // Tao Layout cho App
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
-        // Authentication
-        authModel = new AuthenticationModel(); // Khởi tạo Model
+        // Set up toolbar
+        Toolbar toolbar = binding.toolbar;
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle("Home");
+        }
 
-//        textViewUserInfo = findViewById(R.id.textViewUserInfo);
-//        buttonLogout = findViewById(R.id.buttonLogout);
-//
-//        // Hiển thị thông tin người dùng nếu đã đăng nhập
-//        FirebaseUser currentUser = authModel.getCurrentUser();
-//        if (currentUser != null) {
-//            String userInfo = "Đăng nhập với Email: " + currentUser.getEmail();
-//            textViewUserInfo.setText(userInfo);
-//        } else {
-//            // Nếu không có người dùng đăng nhập, có thể chuyển hướng lại màn hình đăng nhập
-//            // Trường hợp này có thể xảy ra nếu người dùng thoát ứng dụng hoặc trạng thái bị mất
-//            navigateToAuthScreen();
-//        }
-//
-//        buttonLogout.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                authModel.signOut(); // Gọi phương thức đăng xuất trong Model
-//                Toast.makeText(MainActivity.this, "Đã đăng xuất", Toast.LENGTH_SHORT).show();
-//                navigateToAuthScreen();
-//            }
-//        });
+        // Initialize API service
+        apiService = RetrofitClient.getInstance().getClient().create(ApiService.class);
 
+        // Load user data
+        loadUserData();
+
+        // Set up logout button
+        binding.buttonLogout.setOnClickListener(v -> logout());
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        FirebaseUser currentUser = authModel.getCurrentUser();
-        if(currentUser != null){
-            // Người dùng đã đăng nhập, chuyển đến AccountActivity
-            navigateToAccountScreen();
-        } else {
-            // Người dùng chưa đăng nhập, chuyển đến AuthActivity
-            // Nếu không có người dùng đăng nhập, có thể chuyển hướng lại màn hình đăng nhập
-            // Trường hợp này có thể xảy ra nếu người dùng thoát ứng dụng hoặc trạng thái bị mất
-            navigateToAuthScreen();
+    private void loadUserData() {
+        String token = SharedPreferencesManager.getInstance(this).getToken();
+        if (token != null && !token.isEmpty()) {
+            apiService.getCurrentUser("Bearer " + token).enqueue(new Callback<User>() {
+                @Override
+                public void onResponse(Call<User> call, Response<User> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        currentUser = response.body();
+                        updateUI();
+                    } else {
+                        Toast.makeText(MainActivity.this, "Failed to load user data", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<User> call, Throwable t) {
+                    Toast.makeText(MainActivity.this, "Network error", Toast.LENGTH_SHORT).show();
+                }
+            });
         }
     }
 
-    private void navigateToAuthScreen() {
-        Intent intent = new Intent(MainActivity.this, AuthActivity.class);
-        startActivity(intent);
-        finish(); // Đóng MainActivity để người dùng không quay lại được bằng nút Back
+    private void updateUI() {
+        if (currentUser != null) {
+            binding.textViewUserInfo.setText(String.format("Welcome, %s!", currentUser.getUsername()));
+        }
     }
 
-    private void navigateToAccountScreen() {
-        Intent intent = new Intent(MainActivity.this, AccountActivity.class); // Thay thế bằng AccountActivity
-        startActivity(intent);
-        finish(); // Đóng MainActivity để người dùng không quay lại được bằng nút Back
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
     }
 
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.action_account) {
+            startActivity(new Intent(this, AccountActivity.class));
+            return true;
+        } else if (id == R.id.action_logout) {
+            logout();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void logout() {
+        String token = SharedPreferencesManager.getInstance(this).getToken();
+        if (token != null && !token.isEmpty()) {
+            apiService.logout("Bearer " + token).enqueue(new Callback<Void>() {
+                @Override
+                public void onResponse(Call<Void> call, Response<Void> response) {
+                    // Clear local data and go to login screen regardless of server response
+                    SharedPreferencesManager.getInstance(MainActivity.this).clearUserData();
+                    navigateToLogin();
+                }
+
+                @Override
+                public void onFailure(Call<Void> call, Throwable t) {
+                    // Clear local data and go to login screen even if network fails
+                    SharedPreferencesManager.getInstance(MainActivity.this).clearUserData();
+                    navigateToLogin();
+                }
+            });
+        } else {
+            navigateToLogin();
+        }
+    }
+
+    private void navigateToLogin() {
+        Intent intent = new Intent(this, AuthActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
 }

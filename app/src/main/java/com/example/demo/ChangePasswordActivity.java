@@ -1,137 +1,123 @@
 package com.example.demo;
 
-import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.ProgressBar;
+import android.view.MenuItem;
 import android.widget.Toast;
-
-import com.example.demo.model.AuthenticationModel;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import com.example.demo.databinding.ActivityChangePasswordBinding;
+import com.example.demo.network.ApiService;
+import com.example.demo.network.ChangePasswordRequest;
+import com.example.demo.network.RetrofitClient;
+import com.example.demo.utils.SharedPreferencesManager;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ChangePasswordActivity extends AppCompatActivity {
-
-    private ImageView btnBack;
-    private EditText etCurrentPassword;
-    private EditText etNewPassword;
-    private EditText etConfirmNewPassword;
-    private Button btnSave;
-
-    private ProgressBar progressBar; // Khai báo ProgressBar
-
-    private AuthenticationModel authModel; // Khai báo AuthModel
+    private ActivityChangePasswordBinding binding;
+    private ApiService apiService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_change_password);
+        binding = ActivityChangePasswordBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
-        authModel = new AuthenticationModel(); // Khởi tạo AuthModel
+        // Set up toolbar
+        setSupportActionBar(binding.toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle("Change Password");
+        }
 
-        btnBack = findViewById(R.id.btnBack);
-        etCurrentPassword = findViewById(R.id.etCurrentPassword);
-        etNewPassword = findViewById(R.id.etNewPassword);
-        etConfirmNewPassword = findViewById(R.id.etConfirmNewPassword);
-        btnSave = findViewById(R.id.btnSave);
+        // Initialize API service
+        apiService = RetrofitClient.getInstance().getClient().create(ApiService.class);
 
-        progressBar = findViewById(R.id.progressBar); // Ánh xạ ProgressBar (bạn cần thêm ProgressBar vào layout)
+        // Set up click listeners
+        setupClickListeners();
+    }
 
+    private void setupClickListeners() {
+        binding.buttonChangePassword.setOnClickListener(v -> changePassword());
+    }
 
-        btnBack.setOnClickListener(new View.OnClickListener() {
+    private void changePassword() {
+        String currentPassword = binding.editTextCurrentPassword.getText().toString().trim();
+        String newPassword = binding.editTextNewPassword.getText().toString().trim();
+        String confirmPassword = binding.editTextConfirmPassword.getText().toString().trim();
+
+        // Validate input
+        if (currentPassword.isEmpty()) {
+            binding.editTextCurrentPassword.setError("Please enter current password");
+            return;
+        }
+        if (newPassword.isEmpty()) {
+            binding.editTextNewPassword.setError("Please enter new password");
+            return;
+        }
+        if (confirmPassword.isEmpty()) {
+            binding.editTextConfirmPassword.setError("Please confirm new password");
+            return;
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            binding.editTextConfirmPassword.setError("Passwords do not match");
+            return;
+        }
+        if (newPassword.length() < 6) {
+            binding.editTextNewPassword.setError("Password must be at least 6 characters");
+            return;
+        }
+
+        // Show loading
+        binding.buttonChangePassword.setEnabled(false);
+        binding.progressBar.setVisibility(android.view.View.VISIBLE);
+
+        // Get token from SharedPreferences
+        String token = SharedPreferencesManager.getInstance(this).getToken();
+        if (token == null || token.isEmpty()) {
+            Toast.makeText(this, "Please login again", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        // Create request
+        ChangePasswordRequest request = new ChangePasswordRequest(currentPassword, newPassword);
+
+        // Call API
+        apiService.changePassword("Bearer " + token, request).enqueue(new Callback<Void>() {
             @Override
-            public void onClick(View v) {
-                finish(); // Quay lại màn hình trước đó
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                binding.buttonChangePassword.setEnabled(true);
+                binding.progressBar.setVisibility(android.view.View.GONE);
+
+                if (response.isSuccessful()) {
+                    Toast.makeText(ChangePasswordActivity.this, "Password changed successfully", Toast.LENGTH_SHORT).show();
+                    finish();
+                } else {
+                    String errorMessage = "Failed to change password";
+                    if (response.code() == 401) {
+                        errorMessage = "Invalid current password";
+                    }
+                    Toast.makeText(ChangePasswordActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+                }
             }
-        });
 
-        btnSave.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                // Logic xử lý đổi mật khẩu sẽ được thêm vào ở Giai đoạn 7
-                attemptChangePassword();
+            public void onFailure(Call<Void> call, Throwable t) {
+                binding.buttonChangePassword.setEnabled(true);
+                binding.progressBar.setVisibility(android.view.View.GONE);
+                Toast.makeText(ChangePasswordActivity.this, "Network error", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void attemptChangePassword() {
-        String currentPassword = etCurrentPassword.getText().toString().trim();
-        String newPassword = etNewPassword.getText().toString().trim();
-        String confirmNewPassword = etConfirmNewPassword.getText().toString().trim();
-
-        if (currentPassword.isEmpty()) {
-            etCurrentPassword.setError("Mật khẩu hiện tại không được để trống.");
-            etCurrentPassword.requestFocus();
-            return;
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            onBackPressed();
+            return true;
         }
-        if (newPassword.isEmpty()) {
-            etNewPassword.setError("Mật khẩu mới không được để trống.");
-            etNewPassword.requestFocus();
-            return;
-        }
-        if (confirmNewPassword.isEmpty()) {
-            etConfirmNewPassword.setError("Xác nhận mật khẩu mới không được để trống.");
-            etConfirmNewPassword.requestFocus();
-            return;
-        }
-        if (!newPassword.equals(confirmNewPassword)) {
-            etConfirmNewPassword.setError("Mật khẩu xác nhận không khớp.");
-            etConfirmNewPassword.requestFocus();
-            return;
-        }
-        if (newPassword.length() < 6) { // Firebase yêu cầu mật khẩu tối thiểu 6 ký tự
-            etNewPassword.setError("Mật khẩu mới phải có ít nhất 6 ký tự.");
-            etNewPassword.requestFocus();
-            return;
-        }
-
-        // Lấy email hiện tại của người dùng đang đăng nhập từ Firebase Auth
-        // Chúng ta cần email để tạo AuthCredential cho reauthenticate
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser == null || currentUser.getEmail() == null) {
-            Toast.makeText(this, "Không thể lấy thông tin email hiện tại. Vui lòng đăng nhập lại.", Toast.LENGTH_LONG).show();
-            return;
-        }
-        String email = currentUser.getEmail();
-
-        // Hiển thị ProgressBar (nếu có)
-        if (progressBar != null) {
-            progressBar.setVisibility(View.VISIBLE);
-        }
-        btnSave.setEnabled(false); // Vô hiệu hóa nút để tránh click nhiều lần
-
-        authModel.reauthenticateAndUpdatePassword(email, currentPassword, newPassword, new AuthenticationModel.AuthCallback() {
-            @Override
-            public void onSuccess() {
-                // Ẩn ProgressBar và bật lại nút
-                if (progressBar != null) {
-                    progressBar.setVisibility(View.GONE);
-                }
-                btnSave.setEnabled(true);
-
-                Toast.makeText(ChangePasswordActivity.this, "Mật khẩu đã được đổi thành công.", Toast.LENGTH_LONG).show();
-                finish(); // Đóng Activity sau khi đổi thành công
-            }
-
-            @Override
-            public void onFailure(String errorMessage) {
-                // Ẩn ProgressBar và bật lại nút
-                if (progressBar != null) {
-                    progressBar.setVisibility(View.GONE);
-                }
-                btnSave.setEnabled(true);
-
-                Toast.makeText(ChangePasswordActivity.this, "Lỗi đổi mật khẩu: " + errorMessage, Toast.LENGTH_LONG).show();
-                // Gợi ý cho người dùng nếu lỗi là do xác thực lại
-                if (errorMessage != null && errorMessage.contains("Xác thực lại thất bại")) {
-                    Toast.makeText(ChangePasswordActivity.this, "Mật khẩu hiện tại không đúng hoặc cần đăng nhập lại.", Toast.LENGTH_LONG).show();
-                } else if (errorMessage != null && errorMessage.contains("less than 6 characters")) {
-                    Toast.makeText(ChangePasswordActivity.this, "Mật khẩu mới phải có ít nhất 6 ký tự.", Toast.LENGTH_LONG).show();
-                }
-            }
-        });
+        return super.onOptionsItemSelected(item);
     }
 }
