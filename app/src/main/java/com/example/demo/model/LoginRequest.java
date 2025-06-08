@@ -1,7 +1,12 @@
 package com.example.demo.model;
 
+import com.google.gson.annotations.SerializedName;
+
 public class LoginRequest {
+    @SerializedName("email")
     private String email;
+
+    @SerializedName("password")
     private String password;
 
     public LoginRequest(String email, String password) {

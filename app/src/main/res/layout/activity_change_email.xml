@@ -33,7 +33,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                android:hint="New Email">
+                android:hint="Email mới">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/editTextNewEmail"
@@ -47,7 +47,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                android:hint="Current Password"
+                android:hint="Mật khẩu hiện tại"
                 app:passwordToggleEnabled="true">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -66,7 +66,7 @@
                     android:id="@+id/buttonChangeEmail"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Change Email" />
+                    android:text="Thay đổi Email" />
 
                 <ProgressBar
                     android:id="@+id/progressBar"

@@ -1,20 +1,46 @@
 package com.example.demo.model;
 
+import com.google.gson.annotations.SerializedName;
+
 public class User {
-    private String id;
+    @SerializedName("id")
+    private int id;
+
+    @SerializedName("username")
     private String username;
+
+    @SerializedName("email")
     private String email;
+
+    @SerializedName("fullName")
+    private String fullName;
+
+    @SerializedName("phone")
     private String phone;
-    private String role;
+
+    @SerializedName("address")
+    private String address;
+
+    @SerializedName("avatar")
     private String avatar;
+
+    @SerializedName("role")
+    private String role;
+
+    @SerializedName("createdAt")
     private String createdAt;
+
+    @SerializedName("updatedAt")
     private String updatedAt;
 
-    public String getId() {
+    @SerializedName("deletedAt")
+    private String deletedAt;
+
+    public int getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -34,6 +60,14 @@ public class User {
         this.email = email;
     }
 
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
     public String getPhone() {
         return phone;
     }
@@ -42,12 +76,12 @@ public class User {
         this.phone = phone;
     }
 
-    public String getRole() {
-        return role;
+    public String getAddress() {
+        return address;
     }
 
-    public void setRole(String role) {
-        this.role = role;
+    public void setAddress(String address) {
+        this.address = address;
     }
 
     public String getAvatar() {
@@ -56,6 +90,14 @@ public class User {
 
     public void setAvatar(String avatar) {
         this.avatar = avatar;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 
     public String getCreatedAt() {
@@ -72,5 +114,13 @@ public class User {
 
     public void setUpdatedAt(String updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(String deletedAt) {
+        this.deletedAt = deletedAt;
     }
 } 

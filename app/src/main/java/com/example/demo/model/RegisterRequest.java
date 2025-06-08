@@ -1,16 +1,25 @@
 package com.example.demo.model;
 
-public class RegisterRequest {
-    private String username;
-    private String email;
-    private String password;
-    private String phone;
+import com.google.gson.annotations.SerializedName;
 
-    public RegisterRequest(String username, String email, String password, String phone) {
+public class RegisterRequest {
+    @SerializedName("username")
+    private String username;
+
+    @SerializedName("email")
+    private String email;
+
+    @SerializedName("password")
+    private String password;
+
+    @SerializedName("fullName")
+    private String fullName;
+
+    public RegisterRequest(String username, String email, String password, String fullName) {
         this.username = username;
         this.email = email;
         this.password = password;
-        this.phone = phone;
+        this.fullName = fullName;
     }
 
     public String getUsername() {
@@ -37,11 +46,11 @@ public class RegisterRequest {
         this.password = password;
     }
 
-    public String getPhone() {
-        return phone;
+    public String getFullName() {
+        return fullName;
     }
 
-    public void setPhone(String phone) {
-        this.phone = phone;
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 }

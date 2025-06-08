@@ -1,5 +1,7 @@
 package com.example.demo.network;
 
+import com.example.demo.model.User;
+
 public class RegisterResponse {
     private String token;
     private User user;

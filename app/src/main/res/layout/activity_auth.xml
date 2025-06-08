@@ -10,7 +10,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="32dp"
-        android:text="Login"
+        android:text="Đăng nhập"
         android:textSize="24sp"
         android:textStyle="bold" />
 
@@ -30,7 +30,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
-        android:hint="Password"
+        android:hint="Mật khẩu"
         android:inputType="textPassword"
         android:padding="12dp"
         android:background="@android:color/white"
@@ -51,7 +51,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="Register"
+        android:text="Đăng kí"
         android:textColor="@android:color/white"
         android:backgroundTint="@color/teal_700"
         android:padding="12dp" />
@@ -60,7 +60,7 @@
         android:id="@+id/tvForgotPassword"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Forgot Password?"
+        android:text="Quên mật khẩu?"
         android:textColor="@color/teal_700"
         android:padding="8dp" />
 
