@@ -12,14 +12,14 @@ public class RegisterRequest {
     @SerializedName("password")
     private String password;
 
-    @SerializedName("fullName")
-    private String fullName;
+    @SerializedName("phone")
+    private String phone;
 
-    public RegisterRequest(String username, String email, String password, String fullName) {
+    public RegisterRequest(String username, String email, String password, String phone) {
         this.username = username;
         this.email = email;
         this.password = password;
-        this.fullName = fullName;
+        this.phone = phone;
     }
 
     public String getUsername() {
@@ -46,11 +46,11 @@ public class RegisterRequest {
         this.password = password;
     }
 
-    public String getFullName() {
-        return fullName;
+    public String getPhone() {
+        return phone;
     }
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 }

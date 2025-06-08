@@ -9,6 +9,11 @@ public class AuthResponse {
     @SerializedName("user")
     private User user;
 
+    public AuthResponse(String token, User user) {
+        this.token = token;
+        this.user = user;
+    }
+
     public String getToken() {
         return token;
     }

@@ -3,6 +3,8 @@ package com.example.demo.ui.reader;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,6 +14,7 @@ import com.example.demo.R;
 import com.example.demo.model.ReadingProgress;
 import com.example.demo.model.ReadingSettings;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -19,6 +22,7 @@ import retrofit2.Response;
 import com.example.demo.model.Chapter;
 import com.example.demo.api.RetrofitClient;
 import com.example.demo.api.ApiService;
+import com.example.demo.ui.dialogs.FontSettingsDialog;
 
 public class ReaderActivity extends AppCompatActivity {
     private static final String PREFS_NAME = "ReaderPrefs";
@@ -29,12 +33,13 @@ public class ReaderActivity extends AppCompatActivity {
     private TextView chapterTitleText;
     private TextView textViewContent;
     private BottomNavigationView bottomNavigation;
-    private NestedScrollView scrollView;
+    private ScrollView scrollView;
+    private FloatingActionButton fabNextChapter;
 
     private ReadingSettings readingSettings;
     private ReadingProgress readingProgress;
     private Long bookId;
-    private Long chapterId;
+    private Long currentChapterId = 1L;
     private Long userId;
 
     @Override
@@ -48,25 +53,24 @@ public class ReaderActivity extends AppCompatActivity {
         textViewContent = findViewById(R.id.textViewContent);
         bottomNavigation = findViewById(R.id.bottomNavigation);
         scrollView = findViewById(R.id.scrollView);
+        fabNextChapter = findViewById(R.id.fabNextChapter);
 
         // Set up toolbar
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
-        // Get book and chapter IDs from intent
+        // Get book ID from intent
         bookId = getIntent().getLongExtra("bookId", -1);
-        chapterId = getIntent().getLongExtra("chapterId", -1);
         userId = getIntent().getLongExtra("userId", -1);
-
-        if (bookId == -1 || chapterId == -1 || userId == -1) {
-            Toast.makeText(this, "Invalid book or chapter ID", Toast.LENGTH_SHORT).show();
+        if (bookId == -1 || userId == -1) {
+            Toast.makeText(this, "Invalid book or user ID", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
 
         loadReadingProgress();
-        loadChapter();
+        loadChapterContent(bookId, currentChapterId);
 
         // Load reading settings
         loadReadingSettings();
@@ -94,8 +98,14 @@ public class ReaderActivity extends AppCompatActivity {
         });
 
         // Set up scroll listener to save progress
-        scrollView.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+        scrollView.setOnScrollChangeListener((View.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
             saveReadingProgress(scrollY);
+        });
+
+        // Set up FAB click listener
+        fabNextChapter.setOnClickListener(v -> {
+            currentChapterId++;
+            loadChapterContent(bookId, currentChapterId);
         });
     }
 
@@ -120,16 +130,16 @@ public class ReaderActivity extends AppCompatActivity {
                 .getString(bookId.toString(), null);
         if (progressJson != null) {
             readingProgress = new Gson().fromJson(progressJson, ReadingProgress.class);
-            if (readingProgress.getChapterOrder() == chapterId.intValue()) {
+            if (readingProgress.getChapterOrder() == currentChapterId.intValue()) {
                 scrollView.post(() -> scrollView.scrollTo(0, readingProgress.getScrollPosition()));
             }
         } else {
-            readingProgress = new ReadingProgress(bookId.intValue(), chapterId.intValue(), 0);
+            readingProgress = new ReadingProgress(bookId.intValue(), currentChapterId.intValue(), 0);
         }
     }
 
     private void saveReadingProgress(int scrollPosition) {
-        readingProgress.setChapterOrder(chapterId.intValue());
+        readingProgress.setChapterOrder(currentChapterId.intValue());
         readingProgress.setScrollPosition(scrollPosition);
         readingProgress.setLastReadTimestamp(System.currentTimeMillis());
         
@@ -165,20 +175,24 @@ public class ReaderActivity extends AppCompatActivity {
     }
 
     private void loadPreviousChapter() {
-        if (chapterId > 0) {
-            chapterId--;
-            loadChapter();
+        if (currentChapterId > 1) {
+            currentChapterId--;
+            loadChapterContent(bookId, currentChapterId);
         }
     }
 
     private void loadNextChapter() {
-        // TODO: Check if there are more chapters
-        chapterId++;
-        loadChapter();
+        currentChapterId++;
+        loadChapterContent(bookId, currentChapterId);
     }
 
     private void showFontSettingsDialog() {
-        // TODO: Show font settings dialog
+        FontSettingsDialog dialog = new FontSettingsDialog(this, readingSettings, newSettings -> {
+            readingSettings = newSettings;
+            applyReadingSettings();
+            saveReadingSettings();
+        });
+        dialog.show();
     }
 
     private void toggleTheme() {
@@ -187,36 +201,29 @@ public class ReaderActivity extends AppCompatActivity {
         saveReadingSettings();
     }
 
-    private void loadChapter() {
-        ApiService apiService = RetrofitClient.getInstance().create(ApiService.class);
-        apiService.getChapter(chapterId)
-                .enqueue(new Callback<Chapter>() {
-                    @Override
-                    public void onResponse(Call<Chapter> call, Response<Chapter> response) {
-                        if (response.isSuccessful() && response.body() != null) {
-                            Chapter chapter = response.body();
-                            chapterTitleText.setText(chapter.getTitle());
-                            textViewContent.setText(chapter.getContent());
-                            
-                            // Create reading progress with integer IDs
-                            readingProgress = new ReadingProgress(
-                                bookId.intValue(), 
-                                chapterId.intValue(), 
-                                0
-                            );
-                            
-                            // Update chapter index with integer ID
-                            readingProgress.setChapterOrder(chapterId.intValue());
-                        } else {
-                            Toast.makeText(ReaderActivity.this, "Failed to load chapter", Toast.LENGTH_SHORT).show();
-                        }
+    private void loadChapterContent(long bookId, long chapterId) {
+        ApiService apiService = RetrofitClient.getInstance().getApiService();
+        apiService.getChapter(String.valueOf(bookId), String.valueOf(chapterId))
+            .enqueue(new Callback<Chapter>() {
+                @Override
+                public void onResponse(Call<Chapter> call, Response<Chapter> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        Chapter chapter = response.body();
+                        chapterTitleText.setText(chapter.getTitle());
+                        textViewContent.setText(chapter.getContent());
+                        scrollView.scrollTo(0, 0);
+                    } else {
+                        // If chapter not found, go back to previous chapter
+                        currentChapterId--;
+                        textViewContent.setText("End of book");
                     }
+                }
 
-                    @Override
-                    public void onFailure(Call<Chapter> call, Throwable t) {
-                        Toast.makeText(ReaderActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
+                @Override
+                public void onFailure(Call<Chapter> call, Throwable t) {
+                    textViewContent.setText("Error loading chapter");
+                }
+            });
     }
 
     @Override

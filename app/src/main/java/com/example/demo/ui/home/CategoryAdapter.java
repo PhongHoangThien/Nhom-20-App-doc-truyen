@@ -12,13 +12,22 @@ import java.util.List;
 
 public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.CategoryViewHolder> {
     private List<Category> categories;
+    private OnCategoryClickListener listener;
+
+    public interface OnCategoryClickListener {
+        void onCategoryClick(Category category);
+    }
 
     public CategoryAdapter(List<Category> categories) {
         this.categories = categories;
     }
 
-    public void updateCategories(List<Category> categories) {
-        this.categories = categories;
+    public void setOnCategoryClickListener(OnCategoryClickListener listener) {
+        this.listener = listener;
+    }
+
+    public void updateCategories(List<Category> newCategories) {
+        this.categories = newCategories;
         notifyDataSetChanged();
     }
 
@@ -38,19 +47,24 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
 
     @Override
     public int getItemCount() {
-        return categories.size();
+        return categories != null ? categories.size() : 0;
     }
 
-    static class CategoryViewHolder extends RecyclerView.ViewHolder {
-        private final TextView categoryName;
+    class CategoryViewHolder extends RecyclerView.ViewHolder {
+        private final TextView categoryNameText;
 
-        public CategoryViewHolder(@NonNull View itemView) {
+        CategoryViewHolder(@NonNull View itemView) {
             super(itemView);
-            categoryName = itemView.findViewById(R.id.categoryName);
+            categoryNameText = itemView.findViewById(R.id.categoryNameText);
         }
 
-        public void bind(Category category) {
-            categoryName.setText(category.getName());
+        void bind(Category category) {
+            categoryNameText.setText(category.getName());
+            itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onCategoryClick(category);
+                }
+            });
         }
     }
 } 

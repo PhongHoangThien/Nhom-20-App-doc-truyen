@@ -1,5 +1,6 @@
-package com.example.demo.ui.book;
+package com.example.demo.ui.detail;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -11,7 +12,6 @@ import com.example.demo.R;
 import com.example.demo.api.ApiService;
 import com.example.demo.api.RetrofitClient;
 import com.example.demo.model.Book;
-import com.example.demo.ui.reader.ReaderActivity;
 import com.example.demo.utils.ImageLoader;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import retrofit2.Call;
@@ -20,10 +20,7 @@ import retrofit2.Response;
 
 public class BookDetailActivity extends AppCompatActivity {
     private static final String TAG = "BookDetailActivity";
-    public static final String EXTRA_BOOK_ID = "book_id";
-    public static final String EXTRA_BOOK_TITLE = "extra_book_title";
-    public static final String EXTRA_BOOK_AUTHOR = "extra_book_author";
-    public static final String EXTRA_BOOK_COVER = "extra_book_cover";
+    private static final String EXTRA_BOOK_ID = "extra_book_id";
 
     private ImageView bookCoverImage;
     private TextView bookTitleText;
@@ -34,6 +31,12 @@ public class BookDetailActivity extends AppCompatActivity {
     private TextView bookRatingText;
     private FloatingActionButton fabRead;
     private ApiService apiService;
+
+    public static Intent newIntent(Context context, Long bookId) {
+        Intent intent = new Intent(context, BookDetailActivity.class);
+        intent.putExtra(EXTRA_BOOK_ID, bookId);
+        return intent;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,14 +64,6 @@ public class BookDetailActivity extends AppCompatActivity {
             Toast.makeText(this, "Invalid book ID", Toast.LENGTH_SHORT).show();
             finish();
         }
-
-        // Set up FAB click listener
-        fabRead.setOnClickListener(v -> {
-            // TODO: Start ReaderActivity with book ID
-            Intent intent = new Intent(this, ReaderActivity.class);
-            intent.putExtra("bookId", bookId);
-            startActivity(intent);
-        });
     }
 
     private void loadBookDetails(Long bookId) {
@@ -81,34 +76,36 @@ public class BookDetailActivity extends AppCompatActivity {
                     displayBookDetails(book);
                 } else {
                     Log.e(TAG, "Failed to load book details: " + response.message());
-                    Toast.makeText(BookDetailActivity.this, 
-                        "Failed to load book details: " + response.message(), 
-                        Toast.LENGTH_SHORT).show();
+                    Toast.makeText(BookDetailActivity.this, "Failed to load book details", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<Book> call, Throwable t) {
                 Log.e(TAG, "Error loading book details", t);
-                Toast.makeText(BookDetailActivity.this, 
-                    "Error loading book details: " + t.getMessage(), 
-                    Toast.LENGTH_SHORT).show();
+                Toast.makeText(BookDetailActivity.this, "Error loading book details", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void displayBookDetails(Book book) {
-        Log.d(TAG, "Displaying book details: " + book.toString());
-        
-        // Load book cover image
-        ImageLoader.loadBookCover(this, book.getCoverImage(), bookCoverImage);
-        
-        // Set text fields
+        Log.d(TAG, "Displaying book details: " + book.getTitle());
         bookTitleText.setText(book.getTitle());
         bookAuthorText.setText(book.getAuthor());
         bookDescriptionText.setText(book.getDescription());
         bookPriceText.setText(String.format("$%.2f", book.getPrice()));
-        bookCategoryText.setText(book.getCategory() != null ? book.getCategory().getName() : "Unknown");
+        if (book.getCategory() != null) {
+            bookCategoryText.setText(book.getCategory().getName());
+        }
         bookRatingText.setText(String.format("%.1f", book.getRating()));
+
+        // Load book cover image
+        ImageLoader.loadBookCover(this, book.getCoverImage(), bookCoverImage);
+
+        // Set up read button
+        fabRead.setOnClickListener(v -> {
+            // TODO: Implement read functionality
+            Toast.makeText(this, "Read functionality coming soon", Toast.LENGTH_SHORT).show();
+        });
     }
 } 

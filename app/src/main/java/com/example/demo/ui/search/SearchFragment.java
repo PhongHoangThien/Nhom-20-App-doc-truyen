@@ -25,10 +25,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SearchFragment extends Fragment implements BookAdapter.OnBookClickListener {
+    private static final String TAG = "SearchFragment";
     private TextInputEditText searchEditText;
     private RecyclerView searchResultsRecyclerView;
     private BookAdapter bookAdapter;
     private List<Book> books = new ArrayList<>();
+    private ApiService apiService;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        apiService = RetrofitClient.getInstance().getApiService();
+    }
 
     @SuppressLint("WrongViewCast")
     @Nullable
@@ -72,7 +80,6 @@ public class SearchFragment extends Fragment implements BookAdapter.OnBookClickL
     }
 
     private void loadBooks() {
-        ApiService apiService = RetrofitClient.getInstance().create(ApiService.class);
         apiService.getBooks()
                 .enqueue(new Callback<List<Book>>() {
                     @Override
@@ -94,9 +101,7 @@ public class SearchFragment extends Fragment implements BookAdapter.OnBookClickL
     }
 
     private void searchBooks(String query) {
-        RetrofitClient.getInstance()
-                .getApiService()
-                .searchBooks(query)
+        apiService.searchBooks(query)
                 .enqueue(new Callback<List<Book>>() {
                     @Override
                     public void onResponse(Call<List<Book>> call, Response<List<Book>> response) {

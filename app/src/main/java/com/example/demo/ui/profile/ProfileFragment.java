@@ -1,5 +1,6 @@
 package com.example.demo.ui.profile;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,7 +9,13 @@ import android.widget.Button;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+
+import com.example.demo.AuthActivity;
 import com.example.demo.R;
+import com.example.demo.ChangeEmailActivity;
+import com.example.demo.ChangePasswordActivity;
+import com.example.demo.PersonalSettingsActivity;
+import com.example.demo.utils.SharedPreferencesManager;
 import com.google.android.material.imageview.ShapeableImageView;
 
 public class ProfileFragment extends Fragment {
@@ -35,23 +42,37 @@ public class ProfileFragment extends Fragment {
 
         // Set up click listeners
         editProfileButton.setOnClickListener(v -> {
-            // TODO: Navigate to edit profile
+            Intent intent = new Intent(getActivity(), PersonalSettingsActivity.class);
+            startActivity(intent);
         });
 
         changePasswordButton.setOnClickListener(v -> {
-            // TODO: Navigate to change password
+            Intent intent = new Intent(getActivity(), ChangePasswordActivity.class);
+            startActivity(intent);
         });
 
         changeEmailButton.setOnClickListener(v -> {
-            // TODO: Navigate to change email
+            Intent intent = new Intent(getActivity(), ChangeEmailActivity.class);
+            startActivity(intent);
         });
 
         logoutButton.setOnClickListener(v -> {
-            // TODO: Handle logout
+            SharedPreferencesManager.getInstance(requireContext()).clearUserData();
+            Intent intent = new Intent(getActivity(), AuthActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
         });
 
-        // TODO: Load user data
+        // Load user data
+        loadUserData();
 
         return root;
+    }
+
+    private void loadUserData() {
+        SharedPreferencesManager prefs = SharedPreferencesManager.getInstance(requireContext());
+        usernameText.setText(prefs.getUsername());
+        emailText.setText(prefs.getEmail());
+        // TODO: Load profile image using Glide or Picasso
     }
 } 

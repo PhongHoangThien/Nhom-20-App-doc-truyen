@@ -8,10 +8,12 @@
     app:cardElevation="2dp">
 
     <TextView
-        android:id="@+id/categoryName"
+        android:id="@+id/categoryNameText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:padding="12dp"
-        android:textSize="16sp" />
+        android:textSize="16sp"
+        android:textColor="@android:color/black"
+        android:background="?attr/selectableItemBackground"/>
 
 </com.google.android.material.card.MaterialCardView> 
