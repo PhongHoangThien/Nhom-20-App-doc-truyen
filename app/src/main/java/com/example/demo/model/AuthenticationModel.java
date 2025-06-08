@@ -13,6 +13,7 @@ import com.example.demo.network.RegisterRequest;
 import com.example.demo.network.RegisterResponse;
 import com.example.demo.network.ApiService;
 import com.example.demo.network.RetrofitClient;
+import com.google.gson.annotations.SerializedName;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -29,6 +30,25 @@ public class AuthenticationModel {
     private static final String KEY_AVATAR = "avatar";
     private static final String KEY_CREATED_AT = "created_at";
     private static final String KEY_UPDATED_AT = "updated_at";
+    private static final String KEY_FULL_NAME = "fullName";
+
+    @SerializedName("id")
+    private int id;
+
+    @SerializedName("username")
+    private String username;
+
+    @SerializedName("email")
+    private String email;
+
+    @SerializedName("fullName")
+    private String fullName;
+
+    @SerializedName("role")
+    private String role;
+
+    @SerializedName("token")
+    private String token;
 
     private final Context context;
     private final SharedPreferences preferences;
@@ -127,7 +147,7 @@ public class AuthenticationModel {
     private void saveUserData(LoginResponse response) {
         preferences.edit()
                 .putString(KEY_TOKEN, response.getToken())
-                .putString(KEY_USER_ID, response.getUser().getId())
+                .putInt(KEY_USER_ID, response.getUser().getId())
                 .putString(KEY_USERNAME, response.getUser().getUsername())
                 .putString(KEY_EMAIL, response.getUser().getEmail())
                 .putString(KEY_PHONE, response.getUser().getPhone())
@@ -141,7 +161,7 @@ public class AuthenticationModel {
     private void saveUserData(RegisterResponse response) {
         preferences.edit()
                 .putString(KEY_TOKEN, response.getToken())
-                .putString(KEY_USER_ID, response.getUser().getId())
+                .putInt(KEY_USER_ID, response.getUser().getId())
                 .putString(KEY_USERNAME, response.getUser().getUsername())
                 .putString(KEY_EMAIL, response.getUser().getEmail())
                 .putString(KEY_PHONE, response.getUser().getPhone())
@@ -160,5 +180,25 @@ public class AuthenticationModel {
     public interface RegisterCallback {
         void onSuccess();
         void onError(String message);
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 }

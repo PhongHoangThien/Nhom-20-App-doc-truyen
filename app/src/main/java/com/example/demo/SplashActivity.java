@@ -7,7 +7,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.demo.databinding.ActivitySplashBinding;
 import com.example.demo.network.RetrofitClient;
 import com.example.demo.network.ApiService;
-import com.example.demo.network.User;
+import com.example.demo.model.User;
 import com.example.demo.utils.SharedPreferencesManager;
 
 import retrofit2.Call;

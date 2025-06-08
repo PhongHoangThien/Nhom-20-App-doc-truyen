@@ -1,34 +1,30 @@
 package com.example.demo.network;
 
 import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor;
+import okhttp3.Request;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
-import java.util.concurrent.TimeUnit;
 
 public class RetrofitClient {
-    private static final String BASE_URL = "http://10.0.2.2:8081/"; // Local Spring Boot server
+    private static final String BASE_URL = "http://10.0.2.2:8080/api/";
     private static RetrofitClient instance;
     private final Retrofit retrofit;
 
     private RetrofitClient() {
-        // Create logging interceptor
-        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
-        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+        httpClient.addInterceptor(chain -> {
+            Request original = chain.request();
+            Request request = original.newBuilder()
+                    .header("Content-Type", "application/json")
+                    .method(original.method(), original.body())
+                    .build();
+            return chain.proceed(request);
+        });
 
-        // Create OkHttp client
-        OkHttpClient client = new OkHttpClient.Builder()
-                .addInterceptor(loggingInterceptor)
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build();
-
-        // Create Retrofit instance
         retrofit = new Retrofit.Builder()
                 .baseUrl(BASE_URL)
-                .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
+                .client(httpClient.build())
                 .build();
     }
 
@@ -41,5 +37,9 @@ public class RetrofitClient {
 
     public Retrofit getClient() {
         return retrofit;
+    }
+
+    public <T> T create(Class<T> service) {
+        return retrofit.create(service);
     }
 } 

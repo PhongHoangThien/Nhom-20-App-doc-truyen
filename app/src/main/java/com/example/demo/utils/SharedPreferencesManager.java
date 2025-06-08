@@ -2,7 +2,7 @@ package com.example.demo.utils;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import com.example.demo.network.User;
+import com.example.demo.model.User;
 import com.google.gson.Gson;
 
 public class SharedPreferencesManager {

@@ -1,10 +1,7 @@
 package com.example.demo.network;
 
-import com.example.demo.network.LoginRequest;
-import com.example.demo.network.LoginResponse;
-import com.example.demo.network.RegisterRequest;
-import com.example.demo.network.RegisterResponse;
-import com.example.demo.network.User;
+import com.example.demo.model.User;
+import com.example.demo.model.Chapter;
 import retrofit2.Call;
 import retrofit2.http.*;
 
@@ -32,4 +29,7 @@ public interface ApiService {
 
     @POST("api/auth/forgot-password")
     Call<Void> forgotPassword(@Body String email);
+
+    @GET("chapters/{id}")
+    Call<Chapter> getChapter(@Path("id") Long chapterId);
 } 
