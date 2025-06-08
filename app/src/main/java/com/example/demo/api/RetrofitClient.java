@@ -1,14 +1,27 @@
 package com.example.demo.api;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
+import java.util.Date;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import java.util.concurrent.TimeUnit;
 
 public class RetrofitClient {
-    private static final String BASE_URL = "http://10.0.2.2:8081/"; // 10.0.2.2 points to host machine's localhost
+    private static final String BASE_URL = "http://10.0.2.2:8081/api/";
     private static RetrofitClient instance;
-    private final Retrofit retrofit;
+    private final ApiService apiService;
 
     private RetrofitClient() {
         HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
@@ -18,11 +31,13 @@ public class RetrofitClient {
                 .addInterceptor(loggingInterceptor)
                 .build();
 
-        retrofit = new Retrofit.Builder()
+        Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(BASE_URL)
                 .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
+
+        apiService = retrofit.create(ApiService.class);
     }
 
     public static synchronized RetrofitClient getInstance() {
@@ -32,11 +47,11 @@ public class RetrofitClient {
         return instance;
     }
 
-    public <T> T create(Class<T> serviceClass) {
-        return retrofit.create(serviceClass);
+    public ApiService getApiService() {
+        return apiService;
     }
 
-    public ApiService getApiService() {
-        return create(ApiService.class);
+    public static String getBaseUrl() {
+        return BASE_URL;
     }
 } 

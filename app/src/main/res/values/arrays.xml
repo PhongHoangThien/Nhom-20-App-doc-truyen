@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="font_families">
+        <item>sans-serif</item>
+        <item>sans-serif-light</item>
+        <item>sans-serif-condensed</item>
+        <item>sans-serif-medium</item>
+        <item>serif</item>
+        <item>monospace</item>
+    </string-array>
+</resources> 

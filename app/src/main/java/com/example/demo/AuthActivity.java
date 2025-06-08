@@ -4,19 +4,16 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.demo.databinding.ActivityAuthBinding;
-import com.example.demo.model.AuthResponse;
+import com.example.demo.model.AuthenticationModel;
 import com.example.demo.model.LoginRequest;
+import com.example.demo.model.LoginResponse;
 import com.example.demo.model.RegisterRequest;
-import com.example.demo.model.User;
+import com.example.demo.model.RegisterResponse;
 import com.example.demo.api.ApiService;
 import com.example.demo.api.RetrofitClient;
-import com.example.demo.utils.SharedPreferencesManager;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -24,11 +21,10 @@ import retrofit2.Response;
 public class AuthActivity extends AppCompatActivity {
     private static final String TAG = "AuthActivity";
     private ActivityAuthBinding binding;
-    private EditText etEmail, etPassword;
-    private Button btnLogin, btnRegister;
-    private TextView tvForgotPassword;
+    private boolean isLoginMode = true;
     private ApiService apiService;
-    private SharedPreferencesManager prefsManager;
+    private AuthenticationModel authModel;
+    private boolean isNavigating = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,91 +32,160 @@ public class AuthActivity extends AppCompatActivity {
         binding = ActivityAuthBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // Initialize views
-        etEmail = binding.etEmail;
-        etPassword = binding.etPassword;
-        btnLogin = binding.btnLogin;
-        btnRegister = binding.btnRegister;
-        tvForgotPassword = binding.tvForgotPassword;
+        // Initialize API service
+        apiService = RetrofitClient.getInstance().getApiService();
+        authModel = new AuthenticationModel(this);
 
-        // Initialize API service and preferences manager
-        apiService = RetrofitClient.getInstance().create(ApiService.class);
-        prefsManager = SharedPreferencesManager.getInstance(this);
-
-        // Set click listeners
-        btnLogin.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d(TAG, "Login button clicked");
-                login();
-            }
-        });
-
-        btnRegister.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d(TAG, "Register button clicked");
-                Intent intent = new Intent(AuthActivity.this, RegisterActivity.class);
-                startActivity(intent);
-            }
-        });
-
-        tvForgotPassword.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d(TAG, "Forgot password clicked");
-                Intent intent = new Intent(AuthActivity.this, ForgotPasswordActivity.class);
-                startActivity(intent);
-            }
-        });
-    }
-
-    private void login() {
-        String email = etEmail.getText().toString().trim();
-        String password = etPassword.getText().toString().trim();
-
-        Log.d(TAG, "Attempting login with email: " + email);
-
-        if (email.isEmpty() || password.isEmpty()) {
-            Log.w(TAG, "Login failed: Empty email or password");
-            Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
+        // Check if user is already logged in
+        if (authModel.isLoggedIn()) {
+            Log.d(TAG, "User already logged in, going to main screen");
+            navigateToMain();
             return;
         }
 
-        // Create login request
+        // Set up toggle between login and register
+        binding.tvToggle.setOnClickListener(v -> {
+            Log.d(TAG, "Toggle button clicked");
+            toggleAuthMode();
+        });
+
+        // Set up login button
+        binding.btnLogin.setOnClickListener(v -> {
+            Log.d(TAG, "Login button clicked");
+            String email = binding.etEmail.getText().toString().trim();
+            String password = binding.etPassword.getText().toString().trim();
+
+            if (email.isEmpty() || password.isEmpty()) {
+                Toast.makeText(AuthActivity.this, "Please fill all fields", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            login(email, password);
+        });
+
+        // Set up register button
+        binding.btnRegister.setOnClickListener(v -> {
+            Log.d(TAG, "Register button clicked");
+            String username = binding.etUsername.getText().toString().trim();
+            String email = binding.etEmail.getText().toString().trim();
+            String password = binding.etPassword.getText().toString().trim();
+            String phone = binding.etPhone.getText().toString().trim();
+
+            if (username.isEmpty() || email.isEmpty() || password.isEmpty() || phone.isEmpty()) {
+                Toast.makeText(AuthActivity.this, "Please fill all fields", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            register(username, email, password, phone);
+        });
+
+        // Show login mode by default
+        showLoginMode();
+    }
+
+    private void navigateToMain() {
+        if (isFinishing()) return;
+        Log.d(TAG, "Navigating to MainActivity");
+        Intent intent = new Intent(AuthActivity.this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
+
+    private void toggleAuthMode() {
+        isLoginMode = !isLoginMode;
+        if (isLoginMode) {
+            showLoginMode();
+        } else {
+            showRegisterMode();
+        }
+    }
+
+    private void showLoginMode() {
+        binding.etUsername.setVisibility(View.GONE);
+        binding.etPhone.setVisibility(View.GONE);
+        binding.btnLogin.setVisibility(View.VISIBLE);
+        binding.btnRegister.setVisibility(View.GONE);
+        binding.tvToggle.setText("Don't have an account? Register");
+    }
+
+    private void showRegisterMode() {
+        binding.etUsername.setVisibility(View.VISIBLE);
+        binding.etPhone.setVisibility(View.VISIBLE);
+        binding.btnLogin.setVisibility(View.GONE);
+        binding.btnRegister.setVisibility(View.VISIBLE);
+        binding.tvToggle.setText("Already have an account? Login");
+    }
+
+    private void login(String email, String password) {
+        Log.d(TAG, "Attempting login for email: " + email);
         LoginRequest request = new LoginRequest(email, password);
-
-        // Call login API
-        Log.d(TAG, "Calling login API");
-        apiService.login(request).enqueue(new Callback<AuthResponse>() {
+        apiService.login(request).enqueue(new Callback<LoginResponse>() {
             @Override
-            public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
-                Log.d(TAG, "Login response received. Success: " + response.isSuccessful());
+            public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    // Save token and user data
-                    AuthResponse authResponse = response.body();
-                    prefsManager.saveToken(authResponse.getToken());
-                    prefsManager.saveUser(authResponse.getUser());
-
-                    // Login successful
-                    Log.d(TAG, "Login successful");
-                    Toast.makeText(AuthActivity.this, "Login successful", Toast.LENGTH_SHORT).show();
+                    LoginResponse loginResponse = response.body();
+                    Log.d(TAG, "Login successful for user: " + loginResponse.getUser().getEmail());
                     
-                    // Navigate to main screen
-                    Intent intent = new Intent(AuthActivity.this, MainActivity.class);
-                    startActivity(intent);
-                    finish();
+                    // Save login data
+                    authModel.saveUserData(loginResponse);
+                    
+                    // Navigate to main activity
+                    navigateToMain();
                 } else {
-                    // Login failed
-                    Log.e(TAG, "Login failed: " + response.message());
-                    Toast.makeText(AuthActivity.this, "Login failed: " + response.message(), Toast.LENGTH_SHORT).show();
+                    String errorMessage = "Login failed";
+                    if (response.errorBody() != null) {
+                        try {
+                            errorMessage = response.errorBody().string();
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error reading error body", e);
+                        }
+                    }
+                    Log.e(TAG, errorMessage);
+                    Toast.makeText(AuthActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<AuthResponse> call, Throwable t) {
-                // Network error
-                Log.e(TAG, "Login network error", t);
+            public void onFailure(Call<LoginResponse> call, Throwable t) {
+                Log.e(TAG, "Login failed", t);
+                Toast.makeText(AuthActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void register(String username, String email, String password, String phone) {
+        Log.d(TAG, "Attempting registration for email: " + email);
+        RegisterRequest request = new RegisterRequest(username, email, password, phone);
+        apiService.register(request).enqueue(new Callback<RegisterResponse>() {
+            @Override
+            public void onResponse(Call<RegisterResponse> call, Response<RegisterResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    RegisterResponse registerResponse = response.body();
+                    Log.d(TAG, "Registration successful for user: " + registerResponse.getUser().getEmail());
+                    
+                    // Save registration data
+                    authModel.saveUserData(registerResponse);
+                    
+                    // Navigate to main activity
+                    navigateToMain();
+                } else {
+                    String errorMessage = "Registration failed";
+                    if (response.errorBody() != null) {
+                        try {
+                            errorMessage = response.errorBody().string();
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error reading error body", e);
+                        }
+                    }
+                    Log.e(TAG, errorMessage);
+                    Toast.makeText(AuthActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<RegisterResponse> call, Throwable t) {
+                Log.e(TAG, "Registration failed", t);
                 Toast.makeText(AuthActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });

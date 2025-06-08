@@ -2,17 +2,12 @@ package com.example.demo.model;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.widget.Toast;
+import android.util.Log;
 
 import com.example.demo.AuthActivity;
-import com.example.demo.MainActivity;
-import com.example.demo.network.LoginRequest;
-import com.example.demo.network.LoginResponse;
-import com.example.demo.network.RegisterRequest;
-import com.example.demo.network.RegisterResponse;
-import com.example.demo.network.ApiService;
-import com.example.demo.network.RetrofitClient;
+import com.example.demo.api.ApiService;
+import com.example.demo.api.RetrofitClient;
+import com.example.demo.utils.SharedPreferencesManager;
 import com.google.gson.annotations.SerializedName;
 
 import retrofit2.Call;
@@ -20,6 +15,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class AuthenticationModel {
+    private static final String TAG = "AuthenticationModel";
     private static final String PREF_NAME = "AuthPrefs";
     private static final String KEY_TOKEN = "token";
     private static final String KEY_USER_ID = "user_id";
@@ -31,6 +27,7 @@ public class AuthenticationModel {
     private static final String KEY_CREATED_AT = "created_at";
     private static final String KEY_UPDATED_AT = "updated_at";
     private static final String KEY_FULL_NAME = "fullName";
+    private static final String KEY_IS_LOGGED_IN = "is_logged_in";
 
     @SerializedName("id")
     private int id;
@@ -51,13 +48,13 @@ public class AuthenticationModel {
     private String token;
 
     private final Context context;
-    private final SharedPreferences preferences;
     private final ApiService apiService;
+    private final SharedPreferencesManager prefsManager;
 
     public AuthenticationModel(Context context) {
         this.context = context;
-        this.preferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-        this.apiService = RetrofitClient.getInstance().getClient().create(ApiService.class);
+        this.apiService = RetrofitClient.getInstance().getApiService();
+        this.prefsManager = SharedPreferencesManager.getInstance(context);
     }
 
     public void login(String email, String password, LoginCallback callback) {
@@ -104,7 +101,7 @@ public class AuthenticationModel {
 
     public void logout() {
         // Clear saved data
-        preferences.edit().clear().apply();
+        prefsManager.clearUserData();
         
         // Navigate to login screen
         Intent intent = new Intent(context, AuthActivity.class);
@@ -113,63 +110,47 @@ public class AuthenticationModel {
     }
 
     public boolean isLoggedIn() {
-        return preferences.contains(KEY_TOKEN);
+        return prefsManager.isLoggedIn();
     }
 
     public String getToken() {
-        return preferences.getString(KEY_TOKEN, null);
+        return prefsManager.getToken();
     }
 
-    public String getUserId() {
-        return preferences.getString(KEY_USER_ID, null);
+    public int getUserId() {
+        return prefsManager.getUserId();
     }
 
     public String getUsername() {
-        return preferences.getString(KEY_USERNAME, null);
+        return prefsManager.getUsername();
     }
 
     public String getEmail() {
-        return preferences.getString(KEY_EMAIL, null);
+        return prefsManager.getEmail();
     }
 
     public String getPhone() {
-        return preferences.getString(KEY_PHONE, null);
+        return prefsManager.getPhone();
     }
 
     public String getRole() {
-        return preferences.getString(KEY_ROLE, null);
+        return prefsManager.getRole();
     }
 
     public String getAvatar() {
-        return preferences.getString(KEY_AVATAR, null);
+        return prefsManager.getAvatar();
     }
 
-    private void saveUserData(LoginResponse response) {
-        preferences.edit()
-                .putString(KEY_TOKEN, response.getToken())
-                .putInt(KEY_USER_ID, response.getUser().getId())
-                .putString(KEY_USERNAME, response.getUser().getUsername())
-                .putString(KEY_EMAIL, response.getUser().getEmail())
-                .putString(KEY_PHONE, response.getUser().getPhone())
-                .putString(KEY_ROLE, response.getUser().getRole())
-                .putString(KEY_AVATAR, response.getUser().getAvatar())
-                .putString(KEY_CREATED_AT, response.getUser().getCreatedAt())
-                .putString(KEY_UPDATED_AT, response.getUser().getUpdatedAt())
-                .apply();
+    public void saveUserData(LoginResponse response) {
+        // Save token and user to SharedPreferencesManager
+        prefsManager.saveToken(response.getToken());
+        prefsManager.saveUser(response.getUser());
     }
 
-    private void saveUserData(RegisterResponse response) {
-        preferences.edit()
-                .putString(KEY_TOKEN, response.getToken())
-                .putInt(KEY_USER_ID, response.getUser().getId())
-                .putString(KEY_USERNAME, response.getUser().getUsername())
-                .putString(KEY_EMAIL, response.getUser().getEmail())
-                .putString(KEY_PHONE, response.getUser().getPhone())
-                .putString(KEY_ROLE, response.getUser().getRole())
-                .putString(KEY_AVATAR, response.getUser().getAvatar())
-                .putString(KEY_CREATED_AT, response.getUser().getCreatedAt())
-                .putString(KEY_UPDATED_AT, response.getUser().getUpdatedAt())
-                .apply();
+    public void saveUserData(RegisterResponse response) {
+        // Save token and user to SharedPreferencesManager
+        prefsManager.saveToken(response.getToken());
+        prefsManager.saveUser(response.getUser());
     }
 
     public interface LoginCallback {
@@ -200,5 +181,10 @@ public class AuthenticationModel {
 
     public void setToken(String token) {
         this.token = token;
+    }
+
+    public void clearLoginData() {
+        Log.d(TAG, "Clearing login data");
+        prefsManager.clearUserData();
     }
 }

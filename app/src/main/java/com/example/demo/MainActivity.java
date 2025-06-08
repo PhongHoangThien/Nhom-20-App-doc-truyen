@@ -2,6 +2,7 @@ package com.example.demo;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
@@ -9,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.viewpager2.widget.ViewPager2;
 import com.example.demo.databinding.ActivityMainBinding;
 import com.example.demo.model.User;
@@ -28,77 +30,96 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+    private static final String TAG = "MainActivity";
     private ActivityMainBinding binding;
     private ApiService apiService;
     private User currentUser;
     private ViewPager2 viewPager;
     private BottomNavigationView bottomNavigation;
+    private boolean isNavigatingToLogin = false;
+    private SharedPreferencesManager preferenceManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-
-        // Set up toolbar
-        Toolbar toolbar = binding.toolbar;
-        setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("Home");
-        }
-
-        // Initialize API service
+        
+        preferenceManager = SharedPreferencesManager.getInstance(this);
         apiService = RetrofitClient.getInstance().getClient().create(ApiService.class);
+        
+        // Check login status
+        if (!preferenceManager.isLoggedIn()) {
+            Log.d(TAG, "User not logged in, redirecting to login screen");
+            navigateToLogin();
+            return;
+        }
+        
+        // Set up toolbar
+        setSupportActionBar(binding.toolbar);
+        
+        // Set up bottom navigation and ViewPager2
+        setupBottomNavigation();
+    }
 
-        // Load user data
-        loadUserData();
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Don't check login status here to prevent loops
+    }
 
-        // Set up logout button
-        binding.buttonLogout.setOnClickListener(v -> logout());
+    private void navigateToLogin() {
+        if (isFinishing()) return;
+        Log.d(TAG, "Navigating to login screen");
+        Intent intent = new Intent(this, AuthActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
 
-        // Initialize ViewPager and BottomNavigation
-        viewPager = binding.viewPager;
-        bottomNavigation = binding.bottomNavigation;
-
-        // Set up ViewPager with fragments
-        List<Fragment> fragments = new ArrayList<>();
-        fragments.add(new HomeFragment());
-        fragments.add(new LibraryFragment());
-        fragments.add(new SearchFragment());
-        fragments.add(new ProfileFragment());
-
-        MainPagerAdapter pagerAdapter = new MainPagerAdapter(this, fragments);
-        viewPager.setAdapter(pagerAdapter);
-
-        // Connect BottomNavigation with ViewPager
-        viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
-            @Override
-            public void onPageSelected(int position) {
-                bottomNavigation.setSelectedItemId(getNavigationId(position));
-            }
-        });
-
-        bottomNavigation.setOnItemSelectedListener(item -> {
+    private void setupBottomNavigation() {
+        binding.bottomNavigation.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.navigation_home) {
-                viewPager.setCurrentItem(0);
-                return true;
-            } else if (itemId == R.id.navigation_library) {
-                viewPager.setCurrentItem(1);
-                return true;
-            } else if (itemId == R.id.navigation_search) {
-                viewPager.setCurrentItem(2);
+                binding.viewPager.setCurrentItem(0);
                 return true;
             } else if (itemId == R.id.navigation_profile) {
-                viewPager.setCurrentItem(3);
+                binding.viewPager.setCurrentItem(1);
                 return true;
             }
             return false;
         });
+
+        // Set up ViewPager2
+        List<Fragment> fragments = new ArrayList<>();
+        fragments.add(new HomeFragment());
+        fragments.add(new ProfileFragment());
+
+        MainPagerAdapter pagerAdapter = new MainPagerAdapter(this, fragments);
+        binding.viewPager.setAdapter(pagerAdapter);
+        binding.viewPager.setUserInputEnabled(false); // Disable swipe
+
+        // Sync ViewPager2 with BottomNavigationView
+        binding.viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                binding.bottomNavigation.setSelectedItemId(
+                    position == 0 ? R.id.navigation_home : R.id.navigation_profile
+                );
+            }
+        });
+    }
+
+    private void loadHomeFragment() {
+        binding.viewPager.setCurrentItem(0);
+    }
+
+    private void loadProfileFragment() {
+        binding.viewPager.setCurrentItem(1);
     }
 
     private void loadUserData() {
-        String token = SharedPreferencesManager.getInstance(this).getToken();
+        String token = preferenceManager.getToken();
         if (token != null && !token.isEmpty()) {
             apiService.getCurrentUser("Bearer " + token).enqueue(new Callback<User>() {
                 @Override
@@ -147,47 +168,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void logout() {
-        String token = SharedPreferencesManager.getInstance(this).getToken();
+        String token = preferenceManager.getToken();
         if (token != null && !token.isEmpty()) {
             apiService.logout("Bearer " + token).enqueue(new Callback<Void>() {
                 @Override
                 public void onResponse(Call<Void> call, Response<Void> response) {
                     // Clear local data and go to login screen regardless of server response
-                    SharedPreferencesManager.getInstance(MainActivity.this).clearUserData();
+                    preferenceManager.clearUserData();
                     navigateToLogin();
                 }
 
                 @Override
                 public void onFailure(Call<Void> call, Throwable t) {
                     // Clear local data and go to login screen even if network fails
-                    SharedPreferencesManager.getInstance(MainActivity.this).clearUserData();
+                    preferenceManager.clearUserData();
                     navigateToLogin();
                 }
             });
         } else {
             navigateToLogin();
-        }
-    }
-
-    private void navigateToLogin() {
-        Intent intent = new Intent(this, AuthActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
-    }
-
-    private int getNavigationId(int position) {
-        switch (position) {
-            case 0:
-                return R.id.navigation_home;
-            case 1:
-                return R.id.navigation_library;
-            case 2:
-                return R.id.navigation_search;
-            case 3:
-                return R.id.navigation_profile;
-            default:
-                return R.id.navigation_home;
         }
     }
 }

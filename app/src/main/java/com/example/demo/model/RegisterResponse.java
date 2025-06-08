@@ -1,7 +1,12 @@
 package com.example.demo.model;
 
+import com.google.gson.annotations.SerializedName;
+
 public class RegisterResponse {
+    @SerializedName("token")
     private String token;
+
+    @SerializedName("user")
     private User user;
 
     public String getToken() {

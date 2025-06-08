@@ -88,9 +88,10 @@ public class AccountDetailActivity extends AppCompatActivity {
     }
 
     private void updateUI(User user) {
-        binding.textViewUsername.setText(user.getUsername());
         binding.textViewEmail.setText(user.getEmail());
-        binding.textViewPhone.setText(user.getPhone());
+        binding.textViewFullName.setText(user.getFullName() != null ? user.getFullName() : "Not set");
+        binding.textViewPhone.setText(user.getPhone() != null ? user.getPhone() : "Not set");
+        binding.textViewAddress.setText(user.getAddress() != null ? user.getAddress() : "Not set");
         binding.textViewRole.setText(user.getRole());
     }
 

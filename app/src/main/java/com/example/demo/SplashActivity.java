@@ -3,61 +3,56 @@ package com.example.demo;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import androidx.appcompat.app.AppCompatActivity;
-import com.example.demo.databinding.ActivitySplashBinding;
-import com.example.demo.network.RetrofitClient;
-import com.example.demo.network.ApiService;
+import com.example.demo.api.ApiService;
+import com.example.demo.api.RetrofitClient;
 import com.example.demo.model.User;
 import com.example.demo.utils.SharedPreferencesManager;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class SplashActivity extends AppCompatActivity {
-    private ActivitySplashBinding binding;
-    private static final int SPLASH_DELAY = 2000; // 2 seconds
+    private static final String TAG = "SplashActivity";
+    private static final long SPLASH_DELAY = 2000; // 2 seconds
+    private boolean isNavigating = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding = ActivitySplashBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+        setContentView(R.layout.activity_splash);
 
-        // Check login status after delay
+        // Delay for splash screen
         new Handler().postDelayed(this::checkLoginStatus, SPLASH_DELAY);
     }
 
     private void checkLoginStatus() {
-        String token = SharedPreferencesManager.getInstance(this).getToken();
-        if (token == null || token.isEmpty()) {
-            // No token found, go to login screen
-            startActivity(new Intent(this, AuthActivity.class));
+        if (isFinishing()) return;
+        
+        SharedPreferencesManager prefsManager = SharedPreferencesManager.getInstance(this);
+        if (prefsManager.isLoggedIn()) {
+            Log.d(TAG, "User is logged in, going to main screen");
+            navigateToMain();
         } else {
-            // Token exists, verify with server
-            ApiService apiService = RetrofitClient.getInstance().getClient().create(ApiService.class);
-            apiService.getCurrentUser("Bearer " + token).enqueue(new Callback<User>() {
-                @Override
-                public void onResponse(Call<User> call, Response<User> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        // Valid token, go to main screen
-                        startActivity(new Intent(SplashActivity.this, MainActivity.class));
-                    } else {
-                        // Invalid token, go to login screen
-                        SharedPreferencesManager.getInstance(SplashActivity.this).clearUserData();
-                        startActivity(new Intent(SplashActivity.this, AuthActivity.class));
-                    }
-                    finish();
-                }
-
-                @Override
-                public void onFailure(Call<User> call, Throwable t) {
-                    // Network error, go to login screen
-                    SharedPreferencesManager.getInstance(SplashActivity.this).clearUserData();
-                    startActivity(new Intent(SplashActivity.this, AuthActivity.class));
-                    finish();
-                }
-            });
+            Log.d(TAG, "User not logged in, going to login screen");
+            navigateToLogin();
         }
+    }
+
+    private void navigateToLogin() {
+        if (isFinishing()) return;
+        Intent intent = new Intent(this, AuthActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
+
+    private void navigateToMain() {
+        if (isFinishing()) return;
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 } 
