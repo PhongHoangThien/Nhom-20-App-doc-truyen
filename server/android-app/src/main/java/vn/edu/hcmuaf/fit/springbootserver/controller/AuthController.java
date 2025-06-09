@@ -1,51 +1,59 @@
 package vn.edu.hcmuaf.fit.springbootserver.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vn.edu.hcmuaf.fit.springbootserver.dto.auth.AuthResponse;
-import vn.edu.hcmuaf.fit.springbootserver.dto.auth.LoginRequest;
-import vn.edu.hcmuaf.fit.springbootserver.dto.auth.RegisterRequest;
-import vn.edu.hcmuaf.fit.springbootserver.service.UserService;
+import vn.edu.hcmuaf.fit.springbootserver.dto.AuthResponse;
+import vn.edu.hcmuaf.fit.springbootserver.dto.LoginRequest;
+import vn.edu.hcmuaf.fit.springbootserver.dto.RegisterRequest;
+import vn.edu.hcmuaf.fit.springbootserver.service.AuthService;
 
 @RestController
-@RequestMapping("/auth")
-@CrossOrigin(origins = "*")
+@RequestMapping("/api/auth")
 public class AuthController {
-
-    private final UserService userService;
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     @Autowired
-    public AuthController(UserService userService) {
-        this.userService = userService;
-    }
+    private AuthService authService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        System.out.println("Login request received: " + loginRequest.getEmail());
+        logger.info("Login request received for user: {}", loginRequest.getEmail());
         try {
-            AuthResponse response = userService.login(loginRequest);
-            System.out.println("Login successful for user: " + response.getUser().getEmail());
+            AuthResponse response = authService.login(loginRequest);
+            logger.info("Login successful for user: {}", loginRequest.getEmail());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            System.out.println("Login failed: " + e.getMessage());
-            return ResponseEntity.badRequest().body(e.getMessage());
+            logger.error("Login failed for user: {}", loginRequest.getEmail(), e);
+            return ResponseEntity.badRequest().body("Invalid email or password");
         }
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest registerRequest) {
+        logger.info("Registration request received for user: {}", registerRequest.getEmail());
         try {
-            AuthResponse response = userService.register(registerRequest);
+            AuthResponse response = authService.register(registerRequest);
+            logger.info("Registration successful for user: {}", registerRequest.getEmail());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            logger.error("Registration failed for user: {}", registerRequest.getEmail(), e);
+            return ResponseEntity.badRequest().body("Registration failed: " + e.getMessage());
         }
     }
 
-    @PostMapping("/forgot-password")
-    public ResponseEntity<Void> forgotPassword(@RequestParam String email) {
-        userService.forgotPassword(email);
-        return ResponseEntity.ok().build();
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestHeader("Authorization") String token) {
+        logger.info("Logout request received");
+        try {
+            authService.logout(token);
+            logger.info("Logout successful");
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            logger.error("Logout failed", e);
+            return ResponseEntity.badRequest().body("Logout failed: " + e.getMessage());
+        }
     }
 }

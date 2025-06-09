@@ -1,22 +1,32 @@
 package vn.edu.hcmuaf.fit.springbootserver.service.impl;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
 import vn.edu.hcmuaf.fit.springbootserver.entity.Book;
 import vn.edu.hcmuaf.fit.springbootserver.repository.BookRepository;
 import vn.edu.hcmuaf.fit.springbootserver.service.BookService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 public class BookServiceImpl implements BookService {
-
     @Autowired
     private BookRepository bookRepository;
 
     @Override
     public List<Book> getAllBooks() {
         return bookRepository.findAll();
+    }
+
+    @Override
+    public List<Book> getPopularBooks(Pageable pageable) {
+        return bookRepository.findPopularBooks(pageable);
+    }
+
+    @Override
+    public List<Book> getBooksByCategory(Long categoryId) {
+        return bookRepository.findByCategoryId(categoryId);
     }
 
     @Override
@@ -37,7 +47,9 @@ public class BookServiceImpl implements BookService {
         existingBook.setAuthor(book.getAuthor());
         existingBook.setDescription(book.getDescription());
         existingBook.setCoverImage(book.getCoverImage());
-        existingBook.setPrice(book.getPrice());
+        existingBook.setCategory(book.getCategory());
+        existingBook.setRating(book.getRating());
+        existingBook.setViewCount(book.getViewCount());
         return bookRepository.save(existingBook);
     }
 

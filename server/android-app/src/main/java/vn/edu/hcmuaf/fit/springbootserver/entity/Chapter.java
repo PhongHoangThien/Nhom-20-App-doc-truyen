@@ -1,65 +1,59 @@
 package vn.edu.hcmuaf.fit.springbootserver.entity;
 
 import jakarta.persistence.*;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.time.LocalDateTime;
+
+@Data
 @Entity
 @Table(name = "chapters")
 public class Chapter {
+    // Getters and Setters
+    @Getter
+    @Setter
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String title;
-
-    @Column(columnDefinition = "TEXT")
-    private String content;
-
-    @Column(name = "chapter_order")
-    private int chapterOrder;
-
+    @Setter
+    @Getter
     @ManyToOne
     @JoinColumn(name = "book_id")
     private Book book;
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
+    @Getter
+    @Setter
+    @Column(nullable = false)
+    private String title;
+
+    @Setter
+    @Getter
+    @Column(columnDefinition = "TEXT")
+    private String content;
+
+    @Setter
+    @Getter
+    @Column(name = "chapter_number")
+    private Integer chapterNumber;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
-    }
-
-    public int getChapterOrder() {
-        return chapterOrder;
-    }
-
-    public void setChapterOrder(int chapterOrder) {
-        this.chapterOrder = chapterOrder;
-    }
-
-    public Book getBook() {
-        return book;
-    }
-
-    public void setBook(Book book) {
-        this.book = book;
-    }
-} 
+}
