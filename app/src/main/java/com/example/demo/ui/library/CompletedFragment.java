@@ -16,13 +16,10 @@ import com.example.demo.api.ApiService;
 import com.example.demo.api.RetrofitClient;
 import com.example.demo.model.Book;
 import com.example.demo.ui.detail.BookDetailActivity;
-import com.example.demo.ui.home.BookAdapter;
+import com.example.demo.ui.book.BookAdapter;
 import com.example.demo.utils.SharedPreferencesManager;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+
 import java.util.ArrayList;
-import java.util.List;
 
 public class CompletedFragment extends Fragment implements BookAdapter.OnBookClickListener {
     private static final String TAG = "CompletedFragment";

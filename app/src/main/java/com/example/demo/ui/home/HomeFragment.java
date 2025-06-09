@@ -17,7 +17,7 @@ import com.example.demo.api.ApiService;
 import com.example.demo.api.RetrofitClient;
 import com.example.demo.model.Book;
 import com.example.demo.model.Category;
-import com.example.demo.AuthActivity;
+import com.example.demo.ui.book.BookAdapter;
 import com.example.demo.ui.detail.BookDetailActivity;
 import com.example.demo.utils.SharedPreferencesManager;
 
