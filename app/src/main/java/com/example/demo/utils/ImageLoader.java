@@ -14,7 +14,6 @@ public class ImageLoader {
 
     public static void loadBookCover(Context context, String imagePath, ImageView imageView) {
         if (imagePath == null || imagePath.isEmpty()) {
-            // Load default image if no image path is provided
             imageView.setImageResource(R.drawable.default_book_cover);
             return;
         }
@@ -29,7 +28,6 @@ public class ImageLoader {
         // Check if the image path is a drawable resource name
         if (!imagePath.startsWith("http") && !imagePath.startsWith("/")) {
             try {
-                // Try to load from drawable resources
                 int resourceId = context.getResources().getIdentifier(
                     imagePath.replace(".png", "").replace(".jpg", "").replace(".jpeg", ""),
                     "drawable",
@@ -37,6 +35,7 @@ public class ImageLoader {
                 );
                 if (resourceId != 0) {
                     Log.d(TAG, "Loading image from drawable: " + imagePath);
+                    Glide.with(context).clear(imageView);
                     Glide.with(context)
                             .load(resourceId)
                             .apply(requestOptions)
@@ -51,13 +50,10 @@ public class ImageLoader {
         // If not a drawable or drawable loading failed, try loading from URL
         String fullImagePath;
         if (imagePath.startsWith("http")) {
-            // If it's already a full URL, use it as is
             fullImagePath = imagePath;
         } else if (imagePath.startsWith("/")) {
-            // If it's a relative path starting with '/', prepend the base URL
             fullImagePath = RetrofitClient.getBaseUrl().replace("/api/", "") + imagePath;
         } else {
-            // If it's a relative path without '/', add it
             fullImagePath = RetrofitClient.getBaseUrl().replace("/api/", "") + "/" + imagePath;
         }
 

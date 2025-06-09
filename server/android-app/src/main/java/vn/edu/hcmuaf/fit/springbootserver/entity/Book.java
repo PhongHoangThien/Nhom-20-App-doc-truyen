@@ -1,8 +1,11 @@
 package vn.edu.hcmuaf.fit.springbootserver.entity;
 
 import jakarta.persistence.*;
-import java.util.List;
+import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.time.LocalDateTime;
 
+@Data
 @Entity
 @Table(name = "books")
 public class Book {
@@ -19,18 +22,38 @@ public class Book {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "cover_image")
     private String coverImage;
 
-    private double price;
-
-    private double rating;
+    private Double price;
 
     @ManyToOne
     @JoinColumn(name = "category_id")
+    @JsonIgnoreProperties("books")
     private Category category;
 
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL)
-    private List<Chapter> chapters;
+    @Column
+    private Float rating;
+
+    @Column(name = "view_count")
+    private Integer viewCount;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 
     // Getters and Setters
     public Long getId() {
@@ -73,20 +96,12 @@ public class Book {
         this.coverImage = coverImage;
     }
 
-    public double getPrice() {
+    public Double getPrice() {
         return price;
     }
 
-    public void setPrice(double price) {
+    public void setPrice(Double price) {
         this.price = price;
-    }
-
-    public double getRating() {
-        return rating;
-    }
-
-    public void setRating(double rating) {
-        this.rating = rating;
     }
 
     public Category getCategory() {
@@ -97,11 +112,35 @@ public class Book {
         this.category = category;
     }
 
-    public List<Chapter> getChapters() {
-        return chapters;
+    public Float getRating() {
+        return rating;
     }
 
-    public void setChapters(List<Chapter> chapters) {
-        this.chapters = chapters;
+    public void setRating(Float rating) {
+        this.rating = rating;
+    }
+
+    public Integer getViewCount() {
+        return viewCount;
+    }
+
+    public void setViewCount(Integer viewCount) {
+        this.viewCount = viewCount;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 } 

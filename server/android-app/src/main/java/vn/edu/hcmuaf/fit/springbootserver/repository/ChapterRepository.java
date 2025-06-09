@@ -5,6 +5,5 @@ import vn.edu.hcmuaf.fit.springbootserver.entity.Chapter;
 import java.util.List;
 
 public interface ChapterRepository extends JpaRepository<Chapter, Long> {
-    List<Chapter> findByBookIdOrderByChapterOrderAsc(Long bookId);
-    Chapter findByBookIdAndChapterOrder(Long bookId, Integer chapterOrder);
+    List<Chapter> findByBookIdOrderByChapterNumberAsc(Long bookId);
 } 

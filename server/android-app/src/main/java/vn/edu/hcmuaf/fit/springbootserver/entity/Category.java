@@ -1,8 +1,11 @@
 package vn.edu.hcmuaf.fit.springbootserver.entity;
 
 import jakarta.persistence.*;
+import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 
+@Data
 @Entity
 @Table(name = "categories")
 public class Category {
@@ -10,13 +13,14 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String name;
 
-    @Column(columnDefinition = "TEXT")
+    @Column
     private String description;
 
     @OneToMany(mappedBy = "category")
+    @JsonIgnoreProperties("category")
     private List<Book> books;
 
     // Getters and Setters

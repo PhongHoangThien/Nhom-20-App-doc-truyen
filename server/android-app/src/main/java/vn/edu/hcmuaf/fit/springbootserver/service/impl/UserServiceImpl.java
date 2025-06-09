@@ -25,7 +25,7 @@ public class UserServiceImpl implements UserService {
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             System.out.println("Invalid password for user: " + request.getPassword());
-            System.out.println("Encoded password: " + passwordEncoder.encode("admin123"));
+            System.out.println("Encoded password: " + passwordEncoder.encode(request.getPassword()));
             throw new IllegalArgumentException("Invalid password");
         }
 
